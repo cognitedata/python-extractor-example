@@ -1,0 +1,18 @@
+version: "1"
+
+logger:
+    console:
+        level: INFO
+
+cognite:
+    # Read these from environment variables
+    host: ${COGNITE_BASE_URL}
+    api-key: ${COGNITE_API_KEY}
+    project: ${COGNITE_PROJECT}
+
+files:
+  - path: example.csv
+    key-column: Title
+    destination:
+        database: my_database
+        table: movies

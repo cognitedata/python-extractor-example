@@ -1,0 +1,30 @@
+version: "1"
+
+logger:
+    console:
+        level: INFO
+
+cognite:
+    # Read these from environment variables
+    host: ${COGNITE_BASE_URL}
+    api-key: ${COGNITE_API_KEY}
+    project: ${COGNITE_PROJECT}
+
+    external-id-prefix: "frost:"
+
+frost:
+    client-id: ${FROST_CLIENT_ID}
+    elements:
+      - wind_speed
+      - air_temperature
+      - air_pressure_at_sea_level
+
+extractor:
+    create-assets: false
+
+locations:
+  # Blindern
+  - station_id: "SN18700"
+
+  # UiB
+  - station_id: "SN50539"
