@@ -12,7 +12,7 @@ from cognite.extractorutils.util import ensure_time_series
 
 from met_client import FrostApi, WeatherStation
 from weatherconfig import LocationConfig, WeatherConfig
-from weatherextractor import Streamer, create_external_id
+from weatherextractor import Streamer, create_external_id, frontfill
 
 
 def init_stations(locations: List[LocationConfig], frost: FrostApi) -> List[WeatherStation]:
@@ -93,6 +93,7 @@ if __name__ == "__main__":
     frost = FrostApi(config.frost.client_id)
     cdf = config.cognite.get_cognite_client("weather-extractor")
     state_store = config.extractor.state_store.create_state_store(cdf)
+    state_store.initialize()
 
     logger.info("Getting info about weather stations")
     weather_stations = init_stations(config.locations, frost)
@@ -129,6 +130,12 @@ if __name__ == "__main__":
         trigger_log_level="INFO",
         thread_name="CDF-Uploader",
     ) as upload_queue:
+        # Fill in gap in data between end of last run and now
+        logger.info("Starting frontfiller")
+        frontfill(upload_queue, frost, weather_stations, config, state_store)
+
+        # Start streaming live data
+        logger.info("Starting streamer")
         extractor = Streamer(upload_queue, stop, frost, weather_stations, config)
         Thread(target=extractor.run, name="Streamer").start()
 
