@@ -14,12 +14,26 @@ from csvmetrics import Metrics
 
 
 class CsvExtractor:
+    """
+    Main extractor class
+
+    Args:
+        queue: Upload queue to use
+        metrics: Collection of metrics to use
+    """
+
     def __init__(self, queue: RawUploadQueue, metrics: Metrics):
         self.queue = queue
         self.metrics = metrics
         self.logger = logging.getLogger(__name__)
 
-    def extract(self, file: FileConfig):
+    def extract(self, file: FileConfig) -> None:
+        """
+        Extract a single CSV file
+
+        Args:
+            file: Description of file to extract
+        """
         self.logger.info(f"Extracting content from {file.path} to {file.destination.database}/{file.destination.table}")
         self.metrics.files_started.inc()
 
@@ -44,8 +58,13 @@ class CsvExtractor:
             self.logger.exception(f"Extraction of {file.path} failed")
             self.metrics.files_failed.inc()
 
-    def run(self, config: CsvConfig):
-        # Extract all files, with parallelism as configured
+    def run(self, config: CsvConfig) -> None:
+        """
+        Extract all files listed in configuration
+
+        Args:
+            config: Configuration parameters
+        """
         with ThreadPoolExecutor(
             max_workers=config.extractor.parallelism, thread_name_prefix="CsvExtractor"
         ) as executor:
