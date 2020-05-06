@@ -130,14 +130,19 @@ if __name__ == "__main__":
         trigger_log_level="INFO",
         thread_name="CDF-Uploader",
     ) as upload_queue:
+        if config.backfill:
+            logger.info("Starting backfiller")
+            backfiller = Backfiller(upload_queue, stop, frost, weather_stations, config, state_store)
+            Thread(target=backfiller.run, name="Backfiller").start()
+
         # Fill in gap in data between end of last run and now
         logger.info("Starting frontfiller")
         frontfill(upload_queue, frost, weather_stations, config, state_store)
 
         # Start streaming live data
         logger.info("Starting streamer")
-        extractor = Streamer(upload_queue, stop, frost, weather_stations, config)
-        Thread(target=extractor.run, name="Streamer").start()
+        streamer = Streamer(upload_queue, stop, frost, weather_stations, config)
+        Thread(target=streamer.run, name="Streamer").start()
 
         stop.wait()
 
