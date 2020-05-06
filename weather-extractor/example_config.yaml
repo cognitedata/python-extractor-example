@@ -22,6 +22,9 @@ frost:
 extractor:
     create-assets: false
 
+backfill:
+    backfill-to: "2020-01-01"
+
 locations:
   # Blindern
   - station_id: "SN18700"

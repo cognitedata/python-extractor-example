@@ -38,9 +38,15 @@ class ExtractorConfig:
 
 
 @dataclass
+class BackfillConfig:
+    backfill_to: Union[str, float, int]
+
+
+@dataclass
 class WeatherConfig(BaseConfig):
     metrics: Optional[MetricsConfig]
     frost: FrostConfig
     locations: List[LocationConfig]
+    backfill: Optional[BackfillConfig]
 
     extractor: ExtractorConfig = ExtractorConfig()
