@@ -12,10 +12,20 @@ from cognite.extractorutils.util import ensure_time_series
 
 from met_client import FrostApi, WeatherStation
 from weatherconfig import LocationConfig, WeatherConfig
-from weatherextractor import Streamer, create_external_id, frontfill
+from weatherextractor import Backfiller, Streamer, create_external_id, frontfill
 
 
 def init_stations(locations: List[LocationConfig], frost: FrostApi) -> List[WeatherStation]:
+    """
+    Create WeatherStation objects based on the location list in the config
+
+    Args:
+        locations: List of location configurations
+        frost: Frost API
+
+    Returns:
+        List of initialized WeatherStations
+    """
     weather_stations: List[WeatherStation] = []
 
     for location in locations:
@@ -30,6 +40,18 @@ def init_stations(locations: List[LocationConfig], frost: FrostApi) -> List[Weat
 def list_time_series(
     weather_stations: List[WeatherStation], config: WeatherConfig, assets: Optional[Dict[WeatherStation, int]]
 ) -> List[TimeSeries]:
+    """
+    Create TimeSeries Objects (without creating them in CDF) for all the sensors at all the weather stations configured.
+
+    Args:
+        weather_stations: List of weather stations to track
+        config: Configuration parameters, among other containing the list of elements to track
+        assets: (Optional) Dictionary from WeatherStation object to of asset ID. If configured to create assets, the
+                time series will be associated with an asset ID.
+
+    Returns:
+        List of TimeSeries objects
+    """
     time_series = []
 
     for weather_station in weather_stations:
@@ -53,6 +75,17 @@ def list_time_series(
 def create_assets(
     weather_stations: List[WeatherStation], config: WeatherConfig, cdf: CogniteClient
 ) -> Dict[WeatherStation, int]:
+    """
+    Create assets in CDF for all WeatherStation objects
+
+    Args:
+        weather_stations: List of weather stations
+        config: Config parameters
+        cdf: Cognite client
+
+    Returns:
+        Mapping from WeatherStation object to (internal) asset ID in CDF
+    """
     assets = []
 
     for weather_station in weather_stations:

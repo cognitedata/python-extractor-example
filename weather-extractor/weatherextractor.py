@@ -14,7 +14,18 @@ from weatherconfig import WeatherConfig
 _logger = logging.getLogger(__name__)
 
 
-def create_external_id(external_id_prefix, weather_station: WeatherStation, element: str):
+def create_external_id(external_id_prefix, weather_station: WeatherStation, element: str) -> str:
+    """
+    Create the external ID of a time series.
+
+    Args:
+        external_id_prefix: Configured prefix for all external ID from this deployment
+        weather_station: Weather station the time series is associated with
+        element: Specific measurement element (air_temperature, wind_speed, etc)
+
+    Returns:
+        A generated external ID
+    """
     return f"{external_id_prefix}{weather_station.id}_{element}"
 
 
@@ -26,7 +37,7 @@ def frontfill(
     states: AbstractStateStore,
 ) -> None:
     """
-    Query the Frost API for all the data points missing since last run ended to ensure completeness in CDF
+    Query the Frost API for all the data points missing since last run ended to ensure completeness in CDF.
 
     Args:
         upload_queue: Where to put data points
@@ -35,8 +46,14 @@ def frontfill(
         config: Set of configuration parameters
         states: Current state of time series in CDF
     """
-    # Task to send to threadpool
-    def perform_frontfill(weather_station):
+
+    def perform_frontfill(weather_station: WeatherStation) -> None:
+        """
+        Perform a query for a given weather station. Function to send to thread pool below.
+
+        Args:
+            weather_station: Station to get data for
+        """
         timestamps: List[float] = []
         for element in config.frost.elements:
             ts = states.get_state(create_external_id(config.cognite.external_id_prefix, weather_station, element))[1]
@@ -59,6 +76,7 @@ def frontfill(
                 datapoints=data[element],
             )
 
+    # Run perform_frontfill on all weather stations
     with ThreadPoolExecutor(max_workers=config.extractor.parallelism, thread_name_prefix="Frontfiller") as executor:
         for weather_station in weather_stations:
             executor.submit(perform_frontfill, weather_station)
@@ -67,6 +85,17 @@ def frontfill(
 
 
 class Streamer:
+    """
+    Periodically query the Frost API for the current state of all the configured elements.
+
+    Args:
+        upload_queue: Where to put data points
+        stop: Stopping event
+        frost: Frost API to query
+        weather_stations: List of weather stations to frontfill data for
+        config: Set of configuration parameters
+    """
+
     # 1 min total iteration time (usual update frequency is 10 mins in the Frost API)
     target_iteration_time = 60
 
@@ -86,7 +115,13 @@ class Streamer:
 
         self.weather_stations = weather_stations
 
-    def _extract_weather_station(self, weather_station: WeatherStation):
+    def _extract_weather_station(self, weather_station: WeatherStation) -> None:
+        """
+        Perform a query for a given weather station. Function to send to thread pool in run().
+
+        Args:
+            weather_station: Station to get data for
+        """
         _logger.info(f"Getting live data for {weather_station.name}")
 
         data = self.frost.get_current(weather_station, self.config.frost.elements)
@@ -97,7 +132,10 @@ class Streamer:
                 datapoints=[data[element]],
             )
 
-    def run(self):
+    def run(self) -> None:
+        """
+        Run streamer until the stop event is set.
+        """
         with ThreadPoolExecutor(
             max_workers=self.config.extractor.parallelism, thread_name_prefix="Streamer"
         ) as executor:

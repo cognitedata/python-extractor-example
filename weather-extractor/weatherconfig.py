@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import List, Optional, Union
 
 from cognite.extractorutils.configtools import BaseConfig, LocalStateStoreConfig, MetricsConfig, StateStoreConfig
-from cognite.extractorutils.statestore import LocalStateStore
 
 
 @dataclass
