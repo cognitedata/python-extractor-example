@@ -106,6 +106,7 @@ class IotHubExtractor:
                     external_id=ext_id, datapoints=[(timestamp, values[key])],
                 )
 
+        self.queue.upload()  # upload to CDF
         partition_context.update_checkpoint()
 
     def on_error(self, partition_context, error):
