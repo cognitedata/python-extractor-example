@@ -1,0 +1,31 @@
+version: "1"
+
+logger:
+    console:
+        level: INFO
+
+cognite:
+    # Read these from environment variables
+    host: ${COGNITE_BASE_URL}
+    api-key: ${COGNITE_API_KEY}
+    project: ${COGNITE_PROJECT}
+
+metrics:
+    #cognite:
+    #    external_id_prefix: "iot_metrics"
+    #    asset_name: "Azure IOT Hub Extractor metrics"
+    #    asset_external_id: "iot_metrics"
+
+azureiothub:
+    # Event Hub-compatible endpoint
+    # az iot hub show --query properties.eventHubEndpoints.events.endpoint --name {your IoT Hub name}
+    eventhub_compatible_endpoint: ${EVENTHUB_COMPATIBLE_ENDPOINT}
+    # Event Hub-compatible name
+    # az iot hub show --query properties.eventHubEndpoints.events.path --name {your IoT Hub name}
+    eventhub_compatible_path: ${EVENTHUB_COMPATIBLE_PATH}
+
+    # Primary key for the "service" policy to read messages
+    # az iot hub policy show --name service --query primaryKey --hub-name {your IoT Hub name}
+    iot_sas_key: ${IOT_SAS_KEY}
+    
+    iot_root: iot-root

@@ -12,5 +12,6 @@ libary](https://github.com/cognitedata/python-extractor-utils):
    CDF RAW
  * A [weather data extractor](./weather-extractor) reading observational data from the The Norwegian
    Meteorological Institute and uploading the data as time series in CDF
+ * A sample [Azure IOT Hub extractor](./azure-iot-hub-extractor) polling from Azure IOT Hub and pushing datapoints to CDF
 
 See the READMEs in the subfolders for more details on each extractor.
