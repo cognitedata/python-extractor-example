@@ -33,7 +33,7 @@ See [Read device-to-cloud messages from the built-in endpoint](https://docs.micr
 Then run the extractor with the config as argument:
 
 ```
-python main.py example_config.yaml
+python iothubextractor.py example_config.yaml
 ```
 
 To add configure the IOT connection details update the `azureiothub` section in
@@ -54,5 +54,4 @@ azureiothub:
     
     # Asset to attach new time series to
     iot_root: iot-root
-  ...
 ```
