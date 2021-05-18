@@ -16,12 +16,19 @@ from the command line (include the `--user` flag to install for active user
 only, which is sometimes preferable).
 
 To run the extractor with the provided example config, start by setting the
-following environment variables:
+following environment variables for CDF:
 
  * `COGNITE_PROJECT`
  * `COGNITE_API_KEY`
  * `COGNITE_BASE_URL` (can be omitted if your project is hosted at
    `https://api.cognitedata.com`)
+
+Environment variables can be set for IOT hub details as well:
+ * `EVENTHUB_COMPATIBLE_ENDPOINT`
+ * `EVENTHUB_COMPATIBLE_PATH`
+ * `IOT_SAS_KEY`
+
+See [Read device-to-cloud messages from the built-in endpoint](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-messages-read-builtin) for more details around consuming messages from Azure IOT Hub.
 
 Then run the extractor with the config as argument:
 
@@ -45,6 +52,7 @@ azureiothub:
     # az iot hub policy show --name service --query primaryKey --hub-name {your IoT Hub name}
     iot_sas_key: ${IOT_SAS_KEY}
     
+    # Asset to attach new time series to
     iot_root: iot-root
   ...
 ```
