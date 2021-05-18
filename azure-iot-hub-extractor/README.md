@@ -3,7 +3,6 @@ Azure IOT Hub Extractor
 
 This sample extractor consumes messages from an event hub compatible IOT hub
 
-
 ## Running locally
 
 First, you will ned the Cognite Extracor Utilities installed. They are available
