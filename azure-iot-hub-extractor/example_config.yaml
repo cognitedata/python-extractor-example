@@ -9,7 +9,12 @@ cognite:
     host: ${COGNITE_BASE_URL}
     api-key: ${COGNITE_API_KEY}
     project: ${COGNITE_PROJECT}
-    
+
+metrics:
+    cognite:
+        external_id_prefix: "iot_metrics"
+        asset_name: "Azure IOT Hub Extractor metrics"
+        asset_external_id: "iot_metrics"
 
 azureiothub:
     # Event Hub-compatible endpoint

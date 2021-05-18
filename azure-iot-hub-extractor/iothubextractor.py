@@ -29,8 +29,11 @@ class IotHubExtractor:
         metrics: Collection of metrics to use
     """
 
-    def __init__(self, cdf_client: CogniteClient, config: IotHubConfig):
+    def __init__(
+        self, cdf_client: CogniteClient, metrics: Metrics, config: IotHubConfig
+    ):
         self.cdf_client = cdf_client
+        self.metrics = metrics
         self.logger = logging.getLogger(__name__)
         self.asset_id = None
         self.time_series_ensured = set()
@@ -39,7 +42,6 @@ class IotHubExtractor:
             cdf_client,
             max_queue_size=config.extractor.upload_queue_size,
             max_upload_interval=config.extractor.upload_interval,
-            create_missing=True,
             post_upload_function=self.upload_callback,
         )
 
@@ -72,7 +74,7 @@ class IotHubExtractor:
         try:
             with client:
                 client.receive_batch(
-                    on_event_batch=self.on_event_batch, on_error=self.on_error
+                    on_event_batch=self.on_event_batch, on_error=self.on_error,
                 )
         except KeyboardInterrupt:
             print("Receiving has stopped.")
@@ -80,6 +82,7 @@ class IotHubExtractor:
     # Define callbacks to process events
     def on_event_batch(self, partition_context, events):
         for event in events:
+            self.metrics.messages_consumed.inc()
             values = event.body_as_json()
             device = event.system_properties[b"iothub-connection-device-id"].decode(
                 "utf-8"
@@ -99,6 +102,7 @@ class IotHubExtractor:
                         ],
                     )
                     self.time_series_ensured.add(ext_id)
+                    self.metrics.iouthub_timeseries_ensured.inc()
 
                 timestamp = event.system_properties[b"iothub-enqueuedtime"]
 
@@ -125,9 +129,13 @@ class IotHubExtractor:
             )
 
     def upload_callback(self, uploaded_datapoints):
-        logging.getLogger(__name__).info(
-            f"Uploaded {len(uploaded_datapoints)} datapoimts to CDF"
-        )
+
+        count = 0
+        for entry in uploaded_datapoints:
+            count += len(entry["datapoints"])
+
+        logging.getLogger(__name__).info(f"Uploaded {count} datapoimts to CDF")
+        self.metrics.datapoints_written.inc(count)
 
 
 if __name__ == "__main__":
@@ -140,8 +148,16 @@ if __name__ == "__main__":
     logger.info("Starting example Azure IOT Hub extractor")
 
     cdf_client = config.cognite.get_cognite_client("azure-iot-extractor")
+    metrics = Metrics()
 
-    extractor = IotHubExtractor(cdf_client, config)
+    if config.metrics:
+        config.metrics.start_pushers(cdf_client)
+
+    extractor = IotHubExtractor(cdf_client, metrics, config)
     extractor.run(config)
+
+    metrics.finish.set_to_current_time()
+    if config.metrics:
+        config.metrics.stop_pushers()
 
     logger.info("Extractor end")

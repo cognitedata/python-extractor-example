@@ -13,9 +13,9 @@ class Metrics(BaseMetrics):
         self.messages_consumed = Counter(
             "iothub_messages_consumed", "Messages Consumed"
         )
-        self.timeseries_created = Counter(
-            "iouthub_timeseries_created", "Time series created"
+        self.iouthub_timeseries_ensured = Counter(
+            "iouthub_timeseries_ensured", "Time series ensured"
         )
-        self_datapoints_written = Counter(
+        self.datapoints_written = Counter(
             "iothub_datapoints_written", "Datapoints written"
         )
