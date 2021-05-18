@@ -134,7 +134,7 @@ class IotHubExtractor:
         for entry in uploaded_datapoints:
             count += len(entry["datapoints"])
 
-        logging.getLogger(__name__).info(f"Uploaded {count} datapoimts to CDF")
+        logging.getLogger(__name__).info(f"Uploaded {count} datapoints to CDF")
         self.metrics.datapoints_written.inc(count)
 
 
