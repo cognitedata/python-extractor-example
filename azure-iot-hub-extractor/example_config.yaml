@@ -15,7 +15,7 @@ cognite:
     #    client-id: ${CLIENT_ID}
     #    secret: ${CLIENT_SECRET}
     #    scopes: 
-    #      - ${CDF_BASEURL}/.default
+    #      - ${COGNITE_BASE_URL}/.default
     #    tenant: ${TENANT_ID}        
 
 metrics:
