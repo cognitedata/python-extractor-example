@@ -17,15 +17,13 @@ Institute**, and is licensed under Norwegian license for public data (NLOD) and
 
 ## Running locally
 
-First, you will ned the Cognite Extracor Utilities installed. They are available
-as `cognite-extractor-utils` from PyPI. To install them globally, run
+First, you will need `poetry` installed. You should then be able to run
 
 ```
-pip install [--user] cognite-extractor-utils
+poetry run weather_extractor <config file>
 ```
 
-from the command line (include the `--user` flag to install for active user
-only, which is sometimes preferable).
+from the command line.
 
 To run the extractor with the provided example config, start by setting the
 following environment variables:
@@ -35,9 +33,3 @@ following environment variables:
  * `COGNITE_BASE_URL` (can be omitted if your project is hosted at
    `https://api.cognitedata.com`)
  * `FROST_CLIENT_ID`
-
-Then run the extractor with the config as argument:
-
-```
-python main.py example_config.yaml
-```

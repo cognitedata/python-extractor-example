@@ -5,15 +5,13 @@ This sample extractor consumes messages from an event hub compatible IOT hub
 
 ## Running locally
 
-First, you will ned the Cognite Extracor Utilities installed. They are available
-as `cognite-extractor-utils` from PyPI. To install them globally, run
+First, you will need `poetry` installed. You should then be able to run
 
 ```
-pip install [--user] cognite-extractor-utils
+poetry run iot_hub_extractor <config file>
 ```
 
-from the command line (include the `--user` flag to install for active user
-only, which is sometimes preferable).
+from the command line.
 
 To run the extractor with the provided example config, start by setting the
 following environment variables for CDF:
@@ -29,12 +27,6 @@ Environment variables can be set for IOT hub details as well:
  * `IOT_SAS_KEY`
 
 See [Read device-to-cloud messages from the built-in endpoint](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-messages-read-builtin) for more details around consuming messages from Azure IOT Hub.
-
-Then run the extractor with the config as argument:
-
-```
-python iothubextractor.py example_config.yaml
-```
 
 To add configure the IOT connection details update the `azureiothub` section in
 `example_config.yaml`, as such:
