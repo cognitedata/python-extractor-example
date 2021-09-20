@@ -8,8 +8,8 @@ import arrow
 from cognite.extractorutils.statestore import AbstractStateStore
 from cognite.extractorutils.uploader import TimeSeriesUploadQueue
 
-from met_client import FrostApi, WeatherStation
-from weatherconfig import WeatherConfig
+from .config import WeatherConfig
+from .met_client import FrostApi, WeatherStation
 
 _logger = logging.getLogger(__name__)
 
