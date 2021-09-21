@@ -1,10 +1,9 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
 import arrow
 import requests
-from cognite.client.data_classes import Asset
 
 
 @dataclass
@@ -48,7 +47,7 @@ class FrostApi:
             id=data["id"],
             country=data["country"],
             longitude=data["geometry"]["coordinates"][0],
-            latitude=data["geometry"]["coordinates"][0],
+            latitude=data["geometry"]["coordinates"][1],
         )
 
     def get_closest_station(self, longitude: float, latitude: float) -> WeatherStation:

@@ -1,10 +1,9 @@
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Optional
 
 from cognite.extractorutils.configtools import (
     BaseConfig,
     MetricsConfig,
-    RawDestinationConfig,
 )
 
 
@@ -14,7 +13,7 @@ class ExtractorConfig:
     Configuration for the running extractor, so any performance tuning parameters should go here
     """
 
-    upload_queue_size: int = 10
+    upload_queue_size: int = 100_000
     upload_interval: int = 30
     parallelism: int = 1
 

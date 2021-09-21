@@ -2,7 +2,7 @@ version: "1"
 
 logger:
     console:
-        level: INFO
+        level: DEBUG
 
 cognite:
     # Read these from environment variables
