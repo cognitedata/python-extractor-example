@@ -139,7 +139,7 @@ class Streamer:
         with ThreadPoolExecutor(
             max_workers=self.config.extractor.parallelism, thread_name_prefix="Streamer"
         ) as executor:
-            for _ in throttled_loop(Backfiller.target_iteration_time, self.stop):
+            for _ in throttled_loop(Streamer.target_iteration_time, self.stop):
                 futures = []
 
                 for weather_station in self.weather_stations:
@@ -209,7 +209,7 @@ class Backfiller:
             timestamps.append(arrow.utcnow().float_timestamp * 1000)
 
         to_time = arrow.get(max(timestamps) / 1000)
-        from_time = to_time.shift(days=-1)
+        from_time = to_time.shift(days=-7)
 
         if from_time < self.stop_at:
             _logger.info(f"{weather_station.name} reached configured limit at {self.stop_at}")
