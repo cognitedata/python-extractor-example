@@ -7,8 +7,16 @@ logger:
 cognite:
     # Read these from environment variables
     host: ${COGNITE_BASE_URL}
+    # api key
     api-key: ${COGNITE_API_KEY}
     project: ${COGNITE_PROJECT}
+    # OIDC
+    #idp-authentication:
+    #    client-id: ${CLIENT_ID}
+    #    secret: ${CLIENT_SECRET}
+    #    scopes: 
+    #      - ${COGNITE_BASE_URL}/.default
+    #    tenant: ${TENANT_ID}        
 
 metrics:
     #cognite:
