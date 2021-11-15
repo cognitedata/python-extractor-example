@@ -1,5 +1,3 @@
-version: "1"
-
 logger:
     console:
         level: DEBUG
@@ -7,8 +5,14 @@ logger:
 cognite:
     # Read these from environment variables
     host: ${COGNITE_BASE_URL}
-    api-key: ${COGNITE_API_KEY}
     project: ${COGNITE_PROJECT}
+
+    idp-authentication:
+        token-url: ${COGNITE_TOKEN_URL}
+        client-id: ${COGNITE_CLIENT_ID}
+        secret: ${COGNITE_CLIENT_SECRET}
+        scopes:
+            - ${COGNITE_BASE_URL}/.default
 
 files:
   - path: example.csv

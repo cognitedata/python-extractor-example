@@ -19,4 +19,4 @@ requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
 
 [tool.poetry.scripts]
-csv_extractor = "met_extractor.__main__:main"
+iot_hub_extractor = "iot_hub_extractor.extractor:main"

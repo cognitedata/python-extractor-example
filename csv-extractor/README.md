@@ -19,7 +19,9 @@ To run the extractor with the provided example config, start by setting the
 following environment variables:
 
  * `COGNITE_PROJECT`
- * `COGNITE_API_KEY`
+ * `COGNITE_TOKEN_URL`
+ * `COGNITE_CLIENT_ID`
+ * `COGNITE_CLIENT_SECRET`
  * `COGNITE_BASE_URL` (can be omitted if your project is hosted at
    `https://api.cognitedata.com`)
 
