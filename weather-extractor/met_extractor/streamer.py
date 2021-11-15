@@ -1,11 +1,11 @@
 import logging
 from concurrent.futures.thread import ThreadPoolExecutor
 from threading import Event
-from time import time
 from typing import List
 
 import arrow
 from cognite.extractorutils.statestore import AbstractStateStore
+from cognite.extractorutils.throttle import throttled_loop
 from cognite.extractorutils.uploader import TimeSeriesUploadQueue
 
 from .config import WeatherConfig
@@ -139,9 +139,7 @@ class Streamer:
         with ThreadPoolExecutor(
             max_workers=self.config.extractor.parallelism, thread_name_prefix="Streamer"
         ) as executor:
-            while not self.stop.is_set():
-                start_time = time()
-
+            for _ in throttled_loop(Backfiller.target_iteration_time, self.stop):
                 futures = []
 
                 for weather_station in self.weather_stations:
@@ -150,17 +148,6 @@ class Streamer:
                 for future in futures:
                     # result() is blocking until task is complete
                     future.result()
-
-                # Throttle
-                iteration_time = time() - start_time
-                wait_time = Streamer.target_iteration_time - iteration_time
-                if wait_time > 0:
-                    _logger.info(
-                        f"Iteration done in {iteration_time:.1f} s, waiting {wait_time:.1f} s before next query"
-                    )
-                    self.stop.wait(wait_time)
-                else:
-                    _logger.info(f"Iteration done in {iteration_time:.1f} s")
 
 
 class Backfiller:
@@ -246,9 +233,7 @@ class Backfiller:
         with ThreadPoolExecutor(
             max_workers=self.config.extractor.parallelism, thread_name_prefix="Backfiller"
         ) as executor:
-            while not self.stop.is_set():
-                start_time = time()
-
+            for _ in throttled_loop(Backfiller.target_iteration_time, self.stop):
                 futures = []
 
                 # Make copy of list for this iteration to make list deletion in _extract_weather_station safe
@@ -260,13 +245,6 @@ class Backfiller:
                 for future in futures:
                     # result() is blocking until task is complete
                     future.result()
-
-                # Throttle
-                iteration_time = time() - start_time
-                wait_time = Backfiller.target_iteration_time - iteration_time
-                _logger.info(f"Iteration done in {iteration_time:.1f} s, waiting {wait_time:.1f} s before next query")
-                if wait_time > 0:
-                    self.stop.wait(wait_time)
 
                 if len(self.weather_stations) == 0:
                     # All backfilling reached the end

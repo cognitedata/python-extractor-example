@@ -1,5 +1,3 @@
-version: "1"
-
 logger:
     console:
         level: INFO
@@ -7,22 +5,18 @@ logger:
 cognite:
     # Read these from environment variables
     host: ${COGNITE_BASE_URL}
+    project: ${COGNITE_PROJECT}
+
     # api key
     api-key: ${COGNITE_API_KEY}
-    project: ${COGNITE_PROJECT}
+
     # OIDC
     #idp-authentication:
     #    client-id: ${CLIENT_ID}
     #    secret: ${CLIENT_SECRET}
     #    scopes: 
     #      - ${COGNITE_BASE_URL}/.default
-    #    tenant: ${TENANT_ID}        
-
-metrics:
-    #cognite:
-    #    external_id_prefix: "iot_metrics"
-    #    asset_name: "Azure IOT Hub Extractor metrics"
-    #    asset_external_id: "iot_metrics"
+    #    tenant: ${TENANT_ID}
 
 azureiothub:
     # Event Hub-compatible endpoint

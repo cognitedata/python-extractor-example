@@ -1,7 +1,3 @@
-<a href="https://cognite.com/">
-    <img src="https://images.squarespace-cdn.com/content/5bd167cf65a707203855d3c0/1540463676940-6USHZRRF36KCAZLUPM2P/Logo-H.jpg?format=300w&content-type=image%2Fjpeg" alt="Cognite logo" title="Cognite" align="right" height="40" />
-</a>
-
 Sample Extractors using the Python Extractor Util Library
 =========================================================
 
