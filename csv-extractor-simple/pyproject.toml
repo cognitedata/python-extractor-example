@@ -19,4 +19,4 @@ requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
 
 [tool.poetry.scripts]
-csv_extractor = "csv_extractor.extractor:main"
+csv_extractor = "csv_extractor_simple.extractor:main"
