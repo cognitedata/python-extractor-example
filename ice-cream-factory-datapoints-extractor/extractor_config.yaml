@@ -1,0 +1,32 @@
+logger:
+    console:
+        level: INFO
+
+cognite:
+    # Read these from environment variables
+    host: ${COGNITE_BASE_URL}
+    project: ${COGNITE_PROJECT}
+
+    idp-authentication:
+        token-url: ${COGNITE_TOKEN_URL}
+        client-id: ${COGNITE_CLIENT_ID}
+        secret: ${COGNITE_CLIENT_SECRET}
+        scopes:
+            - ${COGNITE_BASE_URL}/.default
+
+api:
+    url: https://ice-cream-factory.inso-internal.cognite.ai
+    sites:
+    - Oslo
+    - Hannover
+
+extractor:
+    create-assets: false
+    upload_interval: 5
+    parallelism: 2
+
+backfill:
+    backfill-min: 30
+
+oee_timeseries_dataset_ext_id: uc:001:oee:ds
+
