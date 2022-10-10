@@ -1,0 +1,25 @@
+logger:
+    console:
+        level: INFO
+
+cognite:
+    # Read these from environment variables
+    host: ${COGNITE_BASE_URL}
+    project: ${COGNITE_PROJECT}
+
+    idp-authentication:
+        token-url: ${COGNITE_TOKEN_URL}
+        client-id: ${COGNITE_CLIENT_ID}
+        secret: ${COGNITE_CLIENT_SECRET}
+        scopes:
+            - ${COGNITE_BASE_URL}/.default
+
+    extraction-pipeline:
+      external-id: ${EXTRACTION_PIPELINE_EXT_ID}
+
+files:
+  - path: example.csv
+    key-column: Title
+    destination:
+        database: test_db
+        table: movies
