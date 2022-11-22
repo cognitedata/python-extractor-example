@@ -5,7 +5,7 @@ description = "A simple CSV extractor"
 authors = ["Mathias Lohne <mathias.lohne@cognite.com>", "Marie Solvik Lepoutre <marie.lepoutre@cognite.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = ">=3.7 <=3.9"
 cognite-extractor-utils = "^2.2.0"
 
 [tool.poetry.dev-dependencies]
