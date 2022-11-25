@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "ice_cream_extractor"
+name = "ice-cream-factory-datapoints-extractor"
 version = "1.0.0"
 description = "A simple rest extractor for ingesting datapoints to CDF clean"
 authors = ["Marie Solvik Lepoutre <marie.lepoutre@cognite.com>"]
@@ -19,4 +19,5 @@ requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
 
 [tool.poetry.scripts]
-ice_cream_extractor = "rest_extractor.extractor:main"
+ice_cream_extractor = "ice_cream_factory_datapoints_extractor.extractor:main"
+
