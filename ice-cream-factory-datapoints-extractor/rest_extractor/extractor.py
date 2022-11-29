@@ -1,5 +1,4 @@
-import os
-
+from pathlib import Path
 from threading import Event, Thread
 from typing import List
 
@@ -10,13 +9,13 @@ from cognite.extractorutils.statestore import AbstractStateStore
 from cognite.extractorutils.uploader import TimeSeriesUploadQueue
 from cognite.extractorutils.util import ensure_time_series
 
-from .config import IceCreamFactoryConfig
-from .datapoints_backfiller import Backfiller
-from .ice_cream_factory_api import IceCreamFactoryAPI
+from rest_extractor.config import IceCreamFactoryConfig
+from rest_extractor.datapoints_backfiller import Backfiller
+from rest_extractor.ice_cream_factory_api import IceCreamFactoryAPI
 
 
 def timeseries_updates(
-    timeseries_list: List[TimeSeries], config: IceCreamFactoryConfig, client: CogniteClient
+        timeseries_list: List[TimeSeries], config: IceCreamFactoryConfig, client: CogniteClient
 ) -> List[TimeSeries]:
     """
     Update Timeseries object with dataset_id and asset_id. This is so non-existing timeseries get created with
@@ -49,7 +48,7 @@ def timeseries_updates(
 
 
 def run_extractor(
-    cognite: CogniteClient, states: AbstractStateStore, config: IceCreamFactoryConfig, stop_event: Event
+        cognite: CogniteClient, states: AbstractStateStore, config: IceCreamFactoryConfig, stop_event: Event
 ) -> None:
     """
     Run extractor and extract datapoints for timeseries for sites given in config.
@@ -95,17 +94,17 @@ def run_extractor(
         stop_event.wait()
 
 
-def main(config_file_path: str = "extractor_config.yaml") -> None:
+def main(config_file_path: str = Path(__file__).parent.parent.absolute() / "extractor_config.yaml") -> None:
     """
     Main entrypoint.
     """
     with Extractor(
-        name="datapoints_rest_extractor",
-        description="An extractor that ingest datapoints from the Ice Cream Factory API to CDF clean",
-        config_class=IceCreamFactoryConfig,
-        version="1.0",
-        config_file_path=config_file_path,
-        run_handle=run_extractor,
+            name="datapoints_rest_extractor",
+            description="An extractor that ingest datapoints from the Ice Cream Factory API to CDF clean",
+            config_class=IceCreamFactoryConfig,
+            version="1.0",
+            config_file_path=config_file_path,
+            run_handle=run_extractor,
     ) as extractor:
         extractor.run()
 

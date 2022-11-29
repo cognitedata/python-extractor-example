@@ -1,11 +1,9 @@
 import time
-
 from concurrent.futures.thread import ThreadPoolExecutor
 from threading import Event
-from typing import List, Set
+from typing import List, Set, Any, Tuple
 
 import arrow
-
 from cognite.client.data_classes import TimeSeries
 from cognite.extractorutils.statestore import AbstractStateStore
 from cognite.extractorutils.throttle import throttled_loop
@@ -30,13 +28,13 @@ class Backfiller:
     """
 
     def __init__(
-        self,
-        upload_queue: TimeSeriesUploadQueue,
-        stop: Event,
-        api: IceCreamFactoryAPI,
-        timeseries_list: List[TimeSeries],
-        config: IceCreamFactoryConfig,
-        states: AbstractStateStore,
+            self,
+            upload_queue: TimeSeriesUploadQueue,
+            stop: Event,
+            api: IceCreamFactoryAPI,
+            timeseries_list: List[TimeSeries],
+            config: IceCreamFactoryConfig,
+            states: AbstractStateStore,
     ):
         # Target iteration time to allow some throttling between iterations
         self.target_iteration_time = 2 * len(timeseries_list)
@@ -59,37 +57,41 @@ class Backfiller:
         Args:
             timeseries: timeseries to get datapoints for
         """
-        timestamps: List[float] = []
-        states = self.states.get_state(timeseries.external_id)
+        try:
+            timestamps: List[float] = []
+            states: Tuple[Any, Any] = self.states.get_state(timeseries.external_id)
 
-        first_datapoint = states[0]
-        if first_datapoint is not None and timeseries.external_id in self.timeseries_seen_set:
-            timestamps.append(first_datapoint)
+            first_datapoint = states[0]
+            if first_datapoint is not None and timeseries.external_id in self.timeseries_seen_set:
+                timestamps.append(first_datapoint)
 
-        if len(timestamps) == 0:
-            # No previous data for timeseries, or start of backfilling loop. Backfill from now
-            timestamps.append(self.now_ts)
-            self.timeseries_seen_set.add(timeseries.external_id)
+            if len(timestamps) == 0:
+                # No previous data for timeseries, or start of backfilling loop. Backfill from now
+                timestamps.append(self.now_ts)
+                self.timeseries_seen_set.add(timeseries.external_id)
 
-        to_time = arrow.get((max(timestamps) / 1000))
-        from_time = to_time.shift(minutes=-10)  # can query API for only 10 min of data
+            to_time = arrow.get((max(timestamps) / 1000))
 
-        if from_time < self.stop_at:
-            print(f"{timeseries.external_id} reached configured limit at {self.stop_at}")
-            from_time = self.stop_at
+            while to_time > self.stop_at:
+                from_time = to_time.shift(minutes=-10)
+
+                print(
+                    f"Getting data for {timeseries.external_id} from {from_time.isoformat()} to {to_time.isoformat()}")
+
+                datapoints_dict = self.api.get_oee_timeseries_datapoints(
+                    timeseries_ext_id=timeseries.external_id, start=from_time.timestamp(), end=to_time.timestamp()
+                )
+
+                for timeseries_ext_id in datapoints_dict:
+                    # API returns 2 associated timeseries.
+                    self.upload_queue.add_to_upload_queue(
+                        external_id=timeseries_ext_id, datapoints=datapoints_dict[timeseries_ext_id]
+                    )
+                to_time = to_time.shift(minutes=-10)
+
             self.timeseries_list.remove(timeseries)
-
-        print(f"Getting data for {timeseries.external_id} " f"from {from_time.isoformat()} to {to_time.isoformat()}")
-
-        datapoints_dict = self.api.get_oee_timeseries_datapoints(
-            timeseries_ext_id=timeseries.external_id, start=from_time.timestamp(), end=to_time.timestamp()
-        )
-
-        for timeseries_ext_id in datapoints_dict:
-            # API returns 2 associated timeseries.
-            self.upload_queue.add_to_upload_queue(
-                external_id=timeseries_ext_id, datapoints=datapoints_dict[timeseries_ext_id]
-            )
+        except Exception as e:
+            print(f"Failed with {e}")
 
     def run(self) -> None:
         """
@@ -97,7 +99,7 @@ class Backfiller:
         set.
         """
         with ThreadPoolExecutor(
-            max_workers=self.config.extractor.parallelism, thread_name_prefix="Backfiller"
+                max_workers=self.config.extractor.parallelism, thread_name_prefix="Backfiller"
         ) as executor:
             for _ in throttled_loop(self.target_iteration_time, self.stop):
                 futures = []

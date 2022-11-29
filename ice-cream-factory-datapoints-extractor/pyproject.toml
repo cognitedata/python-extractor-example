@@ -19,4 +19,4 @@ requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
 
 [tool.poetry.scripts]
-weather_extractor = "rest_extractor.extractor:main"
+extractor = "rest_extractor.extractor:main"
