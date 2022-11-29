@@ -1,3 +1,4 @@
+import logging
 import os
 
 from threading import Event, Thread
@@ -9,7 +10,7 @@ from cognite.extractorutils import Extractor
 from cognite.extractorutils.statestore import AbstractStateStore
 from cognite.extractorutils.uploader import TimeSeriesUploadQueue
 from cognite.extractorutils.util import ensure_time_series
-
+from cognite.client.data_classes import DataSet
 from .config import IceCreamFactoryConfig
 from .datapoints_backfiller import Backfiller
 from .ice_cream_factory_api import IceCreamFactoryAPI
@@ -36,8 +37,12 @@ def timeseries_updates(
     # get asset data from CDF
     cdf_assets = client.assets.retrieve_multiple(external_ids=list(asset_ext_ids_set), ignore_unknown_ids=True)
     asset_ext_id_to_id_dict = {asset.external_id: asset.id for asset in cdf_assets}
-
-    oee_timeseries_dataset_id = client.data_sets.retrieve(external_id=config.oee_timeseries_dataset_ext_id).id
+    try:
+        oee_timeseries_dataset_id = client.data_sets.retrieve(external_id=config.oee_timeseries_dataset_ext_id).id
+    except AttributeError:
+        logging.info("Could not find existing dataset, creating new")
+        ds = client.data_sets.create(DataSet(name="oee_timeseries", external_id=config.oee_timeseries_dataset_ext_id))
+        oee_timeseries_dataset_id = ds.id
 
     updated_timeseries_list: List[TimeSeries] = []
     for timeseries in timeseries_list:
