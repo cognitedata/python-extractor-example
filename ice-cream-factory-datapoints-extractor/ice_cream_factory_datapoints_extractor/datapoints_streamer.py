@@ -1,3 +1,4 @@
+import logging
 from threading import Event
 from typing import List, Set
 
@@ -48,7 +49,7 @@ class Streamer:
         Args:
             timeseries: timeseries to get datapoints for
         """
-        print(f"Getting live data for {timeseries.external_id}")
+        logging.info(f"Getting live data for {timeseries.external_id}")
         to_time = arrow.utcnow()
         # lookup back for 1 minutes. Allows late data.
         from_time = to_time.shift(minutes=-self.config.frontfill.lookback_min)
@@ -67,6 +68,6 @@ class Streamer:
         """
         Run streamer until the stop event is set.
         """
-        while not self.stop.wait(timeout=60.0 * self.config.frontfill.lookback_min / 2.):
-            for i, ts in enumerate(self.timeseries_list):
+        while not self.stop.wait(timeout=60.0 * self.config.frontfill.lookback_min / 6.):
+            for ts in self.timeseries_list:
                 self._extract_timeseries(ts)

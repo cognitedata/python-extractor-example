@@ -67,17 +67,17 @@ def run_extractor(
         config: Configuration parameters
         stop_event: Cancellation token, will be set when an interrupt signal is sent to the extractor process
     """
-
-    print("Starting Ice Cream Factory datapoints extractor")
+    logging.basicConfig(level=logging.INFO)
+    logging.info("Starting Ice Cream Factory datapoints extractor")
     ice_cream_api = IceCreamFactoryAPI(base_url=config.api.url)
 
     sites = ",".join(config.api.sites)
-    print(f"Getting OEE timeseries data for the sites {sites}")
+    logging.info(f"Getting OEE timeseries data for the sites {sites}")
     oee_timeseries_list = ice_cream_api.get_timeseries_list_for_sites(source="oee", sites=config.api.sites)
 
     timeseries_list = timeseries_updates(timeseries_list=oee_timeseries_list, config=config, client=cognite)
 
-    print(f"Ensuring that {len(timeseries_list)} time series exist in CDF")
+    logging.info(f"Ensuring that {len(timeseries_list)} time series exist in CDF")
     # If timeseries don't exist in CDF already, they will be created
     ensure_time_series(cognite, timeseries_list)
 
@@ -107,14 +107,14 @@ def run_extractor(
         with ThreadPoolExecutor(thread_name_prefix="Data",
                                 max_workers=config.extractor.parallelism * 2) as executor:
             if config.backfill.enabled:
-                print(f"Starting backfiller. Back-filling for {config.backfill.history_min} minutes of data")
+                logging.info(f"Starting backfiller. Back-filling for {config.backfill.history_min} minutes of data")
 
                 for i, batch in enumerate(chunks(timeseries_to_query, 10)):
                     worker = Backfiller(queue, stop_event, ice_cream_api, batch, config, states)
                     futures.append(executor.submit(worker.run))
 
             if config.frontfill.enabled:
-                print(f"Starting frontfiller...")
+                logging.info(f"Starting frontfiller...")
 
                 for i, batch in enumerate(chunks(timeseries_to_query, 10)):
                     worker = Streamer(queue, stop_event, ice_cream_api, batch, config)

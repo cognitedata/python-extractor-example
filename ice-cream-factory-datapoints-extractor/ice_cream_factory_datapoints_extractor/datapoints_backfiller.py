@@ -1,4 +1,4 @@
-import copy
+import logging
 from threading import Event
 from typing import List, Set
 
@@ -41,12 +41,11 @@ class Backfiller:
         self.stop = stop
         self.api = api
         self.config = config
-
-        # Create a copy of list, so we can delete from it when the backfill for a timeseries is done
-        self.timeseries_list = copy.deepcopy(timeseries_list)
+        self.logger = logging.getLogger(__name__)
+        self.timeseries_list = timeseries_list
         self.states = states
         self.stop_at = arrow.utcnow().shift(minutes=-config.backfill.history_min)
-        self.now_ts = arrow.utcnow().float_timestamp * 1000
+        self.now_ts = arrow.utcnow()
         self.timeseries_seen_set: Set[str] = set()
 
     @retry(tries=10)
@@ -57,28 +56,32 @@ class Backfiller:
         Args:
             timeseries: timeseries to get datapoints for
         """
-        timestamps: List[float] = []
+        low, high = self.states.get_state(timeseries.external_id)
+        if not low:
+            low = self.stop_at.float_timestamp
+        if not high:
+            high = self.now_ts.float_timestamp
+
+        earliest_start = min(low, self.stop_at.float_timestamp)
+        latest_start = max(low, self.stop_at.float_timestamp)
+        earliest_end = min(high, self.now_ts.float_timestamp)
+        latest_end = max(high, self.now_ts.float_timestamp)
+
+        self.process(timeseries, arrow.get(earliest_start), arrow.get(latest_start))
+        self.process(timeseries, arrow.get(earliest_end), arrow.get(latest_end))
+        logging.info(f"{timeseries.external_id} reached configured limit at {arrow.get(latest_end)}")
+
+    def process(self, timeseries, start, end):
+        logging.info(f"Getting historical data {timeseries.external_id} from {start} to {end}")
         single_query_lookback = - min(60, self.config.backfill.history_min)
-        states = self.states.get_state(timeseries.external_id)
+        while end > start and not self.stop.is_set():
 
-        first_datapoint = states[0]
-        if first_datapoint is not None and timeseries.external_id in self.timeseries_seen_set:
-            timestamps.append(first_datapoint)
+            from_time = end.shift(minutes=single_query_lookback)  # can query API for only 10 min of data
 
-        if len(timestamps) == 0:
-            # No previous data for timeseries, or start of backfilling loop. Backfill from now
-            timestamps.append(self.now_ts)
-            self.timeseries_seen_set.add(timeseries.external_id)
-
-        to_time = arrow.get((max(timestamps) / 1000))
-        while to_time > self.stop_at and not self.stop.is_set():
-
-            from_time = to_time.shift(minutes=single_query_lookback)  # can query API for only 10 min of data
-
-            print(f"Getting data for {timeseries.external_id} from {from_time.isoformat()} to {to_time.isoformat()}")
+            logging.info(f"\t{timeseries.external_id} from {from_time.isoformat()} to {end.isoformat()}")
 
             datapoints_dict = self.api.get_oee_timeseries_datapoints(
-                timeseries_ext_id=timeseries.external_id, start=from_time.timestamp(), end=to_time.timestamp()
+                timeseries_ext_id=timeseries.external_id, start=from_time.timestamp(), end=end.timestamp()
             )
 
             for timeseries_ext_id in datapoints_dict:
@@ -87,9 +90,7 @@ class Backfiller:
                     external_id=timeseries_ext_id, datapoints=datapoints_dict[timeseries_ext_id]
                 )
 
-            to_time = from_time
-
-        print(f"{timeseries.external_id} reached configured limit at {self.stop_at}")
+            end = from_time
 
     def run(self) -> None:
         """
