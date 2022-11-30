@@ -1,18 +1,17 @@
-import time
-
+import copy
 from concurrent.futures.thread import ThreadPoolExecutor
 from threading import Event
 from typing import List, Set
 
 import arrow
-
 from cognite.client.data_classes import TimeSeries
+from cognite.extractorutils.retry import retry
 from cognite.extractorutils.statestore import AbstractStateStore
 from cognite.extractorutils.throttle import throttled_loop
 from cognite.extractorutils.uploader import TimeSeriesUploadQueue
 
-from .config import IceCreamFactoryConfig
-from .ice_cream_factory_api import IceCreamFactoryAPI
+from ice_cream_factory_datapoints_extractor.config import IceCreamFactoryConfig
+from ice_cream_factory_datapoints_extractor.ice_cream_factory_api import IceCreamFactoryAPI
 
 
 class Backfiller:
@@ -30,13 +29,13 @@ class Backfiller:
     """
 
     def __init__(
-        self,
-        upload_queue: TimeSeriesUploadQueue,
-        stop: Event,
-        api: IceCreamFactoryAPI,
-        timeseries_list: List[TimeSeries],
-        config: IceCreamFactoryConfig,
-        states: AbstractStateStore,
+            self,
+            upload_queue: TimeSeriesUploadQueue,
+            stop: Event,
+            api: IceCreamFactoryAPI,
+            timeseries_list: List[TimeSeries],
+            config: IceCreamFactoryConfig,
+            states: AbstractStateStore,
     ):
         # Target iteration time to allow some throttling between iterations
         self.target_iteration_time = 2 * len(timeseries_list)
@@ -46,12 +45,13 @@ class Backfiller:
         self.config = config
 
         # Create a copy of list, so we can delete from it when the backfill for a timeseries is done
-        self.timeseries_list = timeseries_list.copy()
+        self.timeseries_list = copy.deepcopy(timeseries_list)
         self.states = states
-        self.stop_at = arrow.utcnow().shift(minutes=-config.backfill.backfill_min)
+        self.stop_at = arrow.utcnow().shift(minutes=-config.backfill.history_min)
         self.now_ts = arrow.utcnow().float_timestamp * 1000
         self.timeseries_seen_set: Set[str] = set()
 
+    @retry()
     def _extract_time_series(self, timeseries: TimeSeries) -> None:
         """
         Perform a query for a given time series. Function to send to thread pool in run().
@@ -60,6 +60,7 @@ class Backfiller:
             timeseries: timeseries to get datapoints for
         """
         timestamps: List[float] = []
+        single_query_lookback = - min(60, self.config.backfill.history_min)
         states = self.states.get_state(timeseries.external_id)
 
         first_datapoint = states[0]
@@ -72,52 +73,30 @@ class Backfiller:
             self.timeseries_seen_set.add(timeseries.external_id)
 
         to_time = arrow.get((max(timestamps) / 1000))
-        from_time = to_time.shift(minutes=-10)  # can query API for only 10 min of data
+        while to_time > self.stop_at and not self.stop.is_set():
 
-        if from_time < self.stop_at:
-            print(f"{timeseries.external_id} reached configured limit at {self.stop_at}")
-            from_time = self.stop_at
-            self.timeseries_list.remove(timeseries)
+            from_time = to_time.shift(minutes=single_query_lookback)  # can query API for only 10 min of data
 
-        print(f"Getting data for {timeseries.external_id} " f"from {from_time.isoformat()} to {to_time.isoformat()}")
+            print(f"Getting data for {timeseries.external_id} from {from_time.isoformat()} to {to_time.isoformat()}")
 
-        datapoints_dict = self.api.get_oee_timeseries_datapoints(
-            timeseries_ext_id=timeseries.external_id, start=from_time.timestamp(), end=to_time.timestamp()
-        )
-
-        for timeseries_ext_id in datapoints_dict:
-            # API returns 2 associated timeseries.
-            self.upload_queue.add_to_upload_queue(
-                external_id=timeseries_ext_id, datapoints=datapoints_dict[timeseries_ext_id]
+            datapoints_dict = self.api.get_oee_timeseries_datapoints(
+                timeseries_ext_id=timeseries.external_id, start=from_time.timestamp(), end=to_time.timestamp()
             )
+
+            for timeseries_ext_id in datapoints_dict:
+                # API returns 2 associated timeseries.
+                self.upload_queue.add_to_upload_queue(
+                    external_id=timeseries_ext_id, datapoints=datapoints_dict[timeseries_ext_id]
+                )
+
+            to_time = from_time
+
+        print(f"{timeseries.external_id} reached configured limit at {self.stop_at}")
 
     def run(self) -> None:
         """
         Run backfiller until the low watermark has reached the configured backfill-min limit, or until the stop event is
         set.
         """
-        with ThreadPoolExecutor(
-            max_workers=self.config.extractor.parallelism, thread_name_prefix="Backfiller"
-        ) as executor:
-            for _ in throttled_loop(self.target_iteration_time, self.stop):
-                futures = []
-
-                # Make copy of list for this iteration to make list deletion in _extract_time_series safe
-                timeseries_list = self.timeseries_list.copy()
-
-                for ts in timeseries_list:
-                    futures.append(executor.submit(self._extract_time_series, ts))
-                    time.sleep(1.5)  # to not overload api
-
-                for future in futures:
-                    # result() is blocking until task is complete
-                    future.result()
-
-                if len(self.timeseries_list) == 0:
-                    # All backfilling reached the end
-                    print("Backfilling done")
-
-                    # wait to ensure datapoints are uploaded and states are stored in CDF Raw
-                    time.sleep(20)
-                    self.stop.set()
-                    return
+        for ts in self.timeseries_list:
+            self._extract_time_series(ts)

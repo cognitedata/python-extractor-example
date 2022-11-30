@@ -1,23 +1,25 @@
+import argparse
 import logging
-import os
-
-from threading import Event, Thread
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Event
 from typing import List
 
 from cognite.client import CogniteClient
+from cognite.client.data_classes import DataSet
 from cognite.client.data_classes import TimeSeries
 from cognite.extractorutils import Extractor
 from cognite.extractorutils.statestore import AbstractStateStore
 from cognite.extractorutils.uploader import TimeSeriesUploadQueue
 from cognite.extractorutils.util import ensure_time_series
-from cognite.client.data_classes import DataSet
-from .config import IceCreamFactoryConfig
-from .datapoints_backfiller import Backfiller
-from .ice_cream_factory_api import IceCreamFactoryAPI
+
+from ice_cream_factory_datapoints_extractor.config import IceCreamFactoryConfig
+from ice_cream_factory_datapoints_extractor.datapoints_backfiller import Backfiller
+from ice_cream_factory_datapoints_extractor.datapoints_streamer import Streamer
+from ice_cream_factory_datapoints_extractor.ice_cream_factory_api import IceCreamFactoryAPI
 
 
 def timeseries_updates(
-    timeseries_list: List[TimeSeries], config: IceCreamFactoryConfig, client: CogniteClient
+        timeseries_list: List[TimeSeries], config: IceCreamFactoryConfig, client: CogniteClient
 ) -> List[TimeSeries]:
     """
     Update Timeseries object with dataset_id and asset_id. This is so non-existing timeseries get created with
@@ -54,7 +56,7 @@ def timeseries_updates(
 
 
 def run_extractor(
-    cognite: CogniteClient, states: AbstractStateStore, config: IceCreamFactoryConfig, stop_event: Event
+        cognite: CogniteClient, states: AbstractStateStore, config: IceCreamFactoryConfig, stop_event: Event
 ) -> None:
     """
     Run extractor and extract datapoints for timeseries for sites given in config.
@@ -69,7 +71,8 @@ def run_extractor(
     print("Starting Ice Cream Factory datapoints extractor")
     ice_cream_api = IceCreamFactoryAPI(base_url=config.api.url)
 
-    print(f"Getting OEE timeseries data for the sites {config.api.sites}")
+    sites = ",".join(config.api.sites)
+    print(f"Getting OEE timeseries data for the sites {sites}")
     oee_timeseries_list = ice_cream_api.get_timeseries_list_for_sites(source="oee", sites=config.api.sites)
 
     timeseries_list = timeseries_updates(timeseries_list=oee_timeseries_list, config=config, client=cognite)
@@ -89,15 +92,38 @@ def run_extractor(
         cognite,
         post_upload_function=states.post_upload_handler(),
         max_upload_interval=config.extractor.upload_interval,
+        max_queue_size=50_000,
         trigger_log_level="INFO",
         thread_name="CDF-Uploader",
     )
 
-    with clean_uploader_queue as upload_queue:
-        print(f"Starting backfiller. Back-filling for {config.backfill.backfill_min} minutes of data")
-        backfiller = Backfiller(upload_queue, stop_event, ice_cream_api, timeseries_to_query, config, states)
-        Thread(target=backfiller.run, name="Backfiller").start()
-        stop_event.wait()
+    def chunks(lst, n):
+        """Yield successive n-sized chunks from lst."""
+        for i in range(0, len(lst), n):
+            yield lst[i:i + n]
+
+    futures = []
+    with clean_uploader_queue as queue:
+        with ThreadPoolExecutor(thread_name_prefix="Data",
+                                max_workers=config.extractor.parallelism * 2) as executor:
+            if config.backfill.enabled:
+                print(f"Starting backfiller. Back-filling for {config.backfill.history_min} minutes of data")
+
+                for i, batch in enumerate(chunks(timeseries_to_query, 10)):
+                    worker = Backfiller(queue, stop_event, ice_cream_api, batch, config, states)
+                    futures.append(executor.submit(worker.run))
+
+            if config.frontfill.enabled:
+                print(f"Starting frontfiller...")
+
+                for i, batch in enumerate(chunks(timeseries_to_query, 10)):
+                    worker = Streamer(queue, stop_event, ice_cream_api, batch, config)
+                    futures.append(executor.submit(worker.run))
+
+    for future in as_completed(futures):
+        future.result()
+
+    queue.upload()  # Ensure leftovers are complete
 
 
 def main(config_file_path: str = "extractor_config.yaml") -> None:
@@ -105,15 +131,26 @@ def main(config_file_path: str = "extractor_config.yaml") -> None:
     Main entrypoint.
     """
     with Extractor(
-        name="datapoints_rest_extractor",
-        description="An extractor that ingest datapoints from the Ice Cream Factory API to CDF clean",
-        config_class=IceCreamFactoryConfig,
-        version="1.0",
-        config_file_path=config_file_path,
-        run_handle=run_extractor,
+            name="datapoints_rest_extractor",
+            description="An extractor that ingest datapoints from the Ice Cream Factory API to CDF clean",
+            config_class=IceCreamFactoryConfig,
+            version="1.0",
+            config_file_path=config_file_path,
+            run_handle=run_extractor,
     ) as extractor:
         extractor.run()
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Run an extractor")
+    parser.add_argument(
+        "-c",
+        "--config",
+        dest="config_path",
+        type=str,
+        help="File containing the configuration for a job",
+    )
+
+    args = parser.parse_args()
+
+    main(config_file_path=args.config_path)

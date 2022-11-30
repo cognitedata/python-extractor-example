@@ -1,16 +1,13 @@
-from concurrent.futures.thread import ThreadPoolExecutor
 from threading import Event
 from typing import List, Set
 
 import arrow
-
 from cognite.client.data_classes import TimeSeries
-from cognite.extractorutils.throttle import throttled_loop
 from cognite.extractorutils.uploader import TimeSeriesUploadQueue
 
 from .config import IceCreamFactoryConfig
 from .ice_cream_factory_api import IceCreamFactoryAPI
-import time
+
 
 class Streamer:
     """
@@ -51,7 +48,8 @@ class Streamer:
         """
         print(f"Getting live data for {timeseries.external_id}")
         to_time = arrow.utcnow()
-        from_time = to_time.shift(minutes=-10)
+        # lookup back for 1 minutes. Allows late data.
+        from_time = to_time.shift(minutes=-self.config.frontfill.lookback_min)
 
         datapoints_dict = self.api.get_oee_timeseries_datapoints(
             timeseries_ext_id=timeseries.external_id, start=from_time.timestamp(), end=to_time.timestamp()
@@ -67,16 +65,6 @@ class Streamer:
         """
         Run streamer until the stop event is set.
         """
-        with ThreadPoolExecutor(
-            max_workers=self.config.extractor.parallelism, thread_name_prefix="Streamer"
-        ) as executor:
-            for _ in throttled_loop(self.target_iteration_time, self.stop):
-                futures = []
-
-                for timeseries in self.timeseries_list:
-                    futures.append(executor.submit(self._extract_timeseries, timeseries))
-                    time.sleep(1.2)  # to not overload api
-
-                for future in futures:
-                    # result() is blocking until task is complete
-                    future.result()
+        while not self.stop.wait(timeout=60.0 * self.config.frontfill.lookback_min / 2.):
+            for i, ts in enumerate(self.timeseries_list):
+                self._extract_timeseries(ts)

@@ -5,8 +5,10 @@ description = "A simple rest extractor for ingesting datapoints to CDF clean"
 authors = ["Marie Solvik Lepoutre <marie.lepoutre@cognite.com>"]
 
 [tool.poetry.dependencies]
-python = ">=3.8.0,<4.0"
-cognite-extractor-utils = "^2.2.0"
+python = "~3.8"
+cognite-extractor-utils = "*"
+retry = "*"
+ujson = "*"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.9.3"
