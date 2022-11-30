@@ -1,14 +1,12 @@
 import copy
-from concurrent.futures.thread import ThreadPoolExecutor
 from threading import Event
 from typing import List, Set
 
 import arrow
 from cognite.client.data_classes import TimeSeries
-from cognite.extractorutils.retry import retry
 from cognite.extractorutils.statestore import AbstractStateStore
-from cognite.extractorutils.throttle import throttled_loop
 from cognite.extractorutils.uploader import TimeSeriesUploadQueue
+from retry import retry
 
 from ice_cream_factory_datapoints_extractor.config import IceCreamFactoryConfig
 from ice_cream_factory_datapoints_extractor.ice_cream_factory_api import IceCreamFactoryAPI
@@ -51,7 +49,7 @@ class Backfiller:
         self.now_ts = arrow.utcnow().float_timestamp * 1000
         self.timeseries_seen_set: Set[str] = set()
 
-    @retry()
+    @retry(tries=10)
     def _extract_time_series(self, timeseries: TimeSeries) -> None:
         """
         Perform a query for a given time series. Function to send to thread pool in run().

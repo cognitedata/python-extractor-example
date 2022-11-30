@@ -4,6 +4,7 @@ from typing import List, Set
 import arrow
 from cognite.client.data_classes import TimeSeries
 from cognite.extractorutils.uploader import TimeSeriesUploadQueue
+from retry import retry
 
 from .config import IceCreamFactoryConfig
 from .ice_cream_factory_api import IceCreamFactoryAPI
@@ -39,6 +40,7 @@ class Streamer:
         self.timeseries_list = timeseries_list
         self.timeseries_seen_set: Set[str] = set()
 
+    @retry(tries=10)
     def _extract_timeseries(self, timeseries: TimeSeries) -> None:
         """
         Perform a query for a given time series. Function to send to thread pool in run().
