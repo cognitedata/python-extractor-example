@@ -36,7 +36,7 @@ extractor:
   parallelism: 4
   state_store:
     raw:
-      database: src:005:oee:db:state
+      database: src:002:opcua:db:state
       table: timeseries_datapoints_states
 
 backfill:
@@ -49,5 +49,5 @@ frontfill:
   lookback-min: 60
 
 
-oee_timeseries_dataset_ext_id: uc:001:oee:ds
+oee_timeseries_dataset_ext_id: src:002:opcua:ds
 
