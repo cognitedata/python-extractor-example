@@ -4,6 +4,7 @@ from typing import List, Set
 
 import arrow
 from cognite.client.data_classes import TimeSeries
+from cognite.extractorutils.statestore import AbstractStateStore
 from cognite.extractorutils.uploader import TimeSeriesUploadQueue
 from retry import retry
 
@@ -30,6 +31,7 @@ class Streamer:
             api: IceCreamFactoryAPI,
             timeseries_list: List[TimeSeries],
             config: IceCreamFactoryConfig,
+            states: AbstractStateStore,
     ):
         # Target iteration time to allow some throttling between iterations
         self.target_iteration_time = int(1.5 * len(timeseries_list))
@@ -37,6 +39,7 @@ class Streamer:
         self.stop = stop
         self.api = api
         self.config = config
+        self.states = states
 
         self.timeseries_list = timeseries_list
         self.timeseries_seen_set: Set[str] = set()
@@ -68,6 +71,8 @@ class Streamer:
         """
         Run streamer until the stop event is set.
         """
-        while not self.stop.wait(timeout=60.0 * self.config.frontfill.lookback_min / 6.):
+        while True:
             for ts in self.timeseries_list:
                 self._extract_timeseries(ts)
+            if not (self.config.frontfill.continuous and self.stop.wait(60.0 * self.config.frontfill.lookback_min / 6.)):
+                break

@@ -1,5 +1,6 @@
 import argparse
 import logging
+import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Event
 from typing import List
@@ -117,13 +118,25 @@ def run_extractor(
                 logging.info(f"Starting frontfiller...")
 
                 for i, batch in enumerate(chunks(timeseries_to_query, 10)):
-                    worker = Streamer(queue, stop_event, ice_cream_api, batch, config)
+                    worker = Streamer(queue, stop_event, ice_cream_api, batch, config, states)
                     futures.append(executor.submit(worker.run))
 
     for future in as_completed(futures):
         future.result()
 
     queue.upload()  # Ensure leftovers are complete
+
+    if config.frontfill.enabled and not config.backfill.enabled:
+        fake_state_ext_id = "fake_failure_counter"
+        low, high = states.get_state(fake_state_ext_id)
+        if low is None:
+            low = 0
+
+        states.set_state(fake_state_ext_id, low + 1, None)
+
+        if low % random.randint(15, 20) == 0:
+            raise NotImplementedError("This is a synthetic error. Data was extracted successfully, but monitoring "
+                                      "and extraction pipelines should be triggered for DEMO purposes")
 
 
 def main(config_file_path: str = "extractor_config.yaml") -> None:

@@ -33,6 +33,7 @@ class BackFillConfig:
 @dataclass
 class FrontFillConfig:
     enabled: bool
+    continuous: bool
     lookback_min: float
 
 
@@ -42,4 +43,5 @@ class IceCreamFactoryConfig(BaseConfig):
     backfill: BackFillConfig
     frontfill: FrontFillConfig
     oee_timeseries_dataset_ext_id: str  # ext id of dataset for oee timeseries. Used to populate timeseries in the correct dataset
-    extractor: ExtractorConfig = ExtractorConfig()
+    extractor: ExtractorConfig
+
