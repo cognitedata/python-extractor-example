@@ -46,7 +46,7 @@ backfill:
 frontfill:
   enabled: True
   continuous: False
-  lookback-min: 2
+  lookback-min: 60
 
 
 oee_timeseries_dataset_ext_id: uc:001:oee:ds
