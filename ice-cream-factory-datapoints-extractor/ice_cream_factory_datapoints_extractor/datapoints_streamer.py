@@ -58,7 +58,7 @@ class Streamer:
         from_time = to_time.shift(minutes=-self.config.frontfill.lookback_min)
         single_query_lookback = min(60, self.config.frontfill.lookback_min)
 
-        time_ranges = {(from_time, to_time)}
+        time_ranges = {}
         period_start = from_time
         while period_start < to_time:
             period_end = min(period_start.shift(minutes=single_query_lookback), to_time)
