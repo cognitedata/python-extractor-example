@@ -56,16 +56,26 @@ class Streamer:
         to_time = arrow.utcnow()
         # lookup back for 1 minutes. Allows late data.
         from_time = to_time.shift(minutes=-self.config.frontfill.lookback_min)
+        single_query_lookback = min(60, self.config.frontfill.lookback_min)
 
-        datapoints_dict = self.api.get_oee_timeseries_datapoints(
-            timeseries_ext_id=timeseries.external_id, start=from_time.timestamp(), end=to_time.timestamp()
-        )
+        time_ranges = {(from_time, to_time)}
+        period_start = from_time
+        while period_start < to_time:
+            period_end = min(period_start.shift(minutes=single_query_lookback), to_time)
+            time_ranges.add((period_start, period_end))
+            period_start = period_end
 
-        for timeseries_ext_id in datapoints_dict:
-            # API returns 2 associated timeseries.
-            self.upload_queue.add_to_upload_queue(
-                external_id=timeseries_ext_id, datapoints=datapoints_dict[timeseries_ext_id]
+        for from_time, to_time in time_ranges:
+
+            datapoints_dict = self.api.get_oee_timeseries_datapoints(
+                timeseries_ext_id=timeseries.external_id, start=from_time.timestamp(), end=to_time.timestamp()
             )
+
+            for timeseries_ext_id in datapoints_dict:
+                # API returns 2 associated timeseries.
+                self.upload_queue.add_to_upload_queue(
+                    external_id=timeseries_ext_id, datapoints=datapoints_dict[timeseries_ext_id]
+                )
 
     def run(self) -> None:
         """
