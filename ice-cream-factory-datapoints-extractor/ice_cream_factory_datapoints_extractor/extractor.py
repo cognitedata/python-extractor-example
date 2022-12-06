@@ -108,7 +108,7 @@ def run_extractor(
         with ThreadPoolExecutor(thread_name_prefix="Data",
                                 max_workers=config.extractor.parallelism * 2) as executor:
             if config.backfill.enabled:
-                logging.info(f"Starting backfiller. Back-filling for {config.backfill.history_min} minutes of data")
+                logging.info(f"Starting backfiller. Back-filling for {config.backfill.history_days} days of data")
 
                 for i, batch in enumerate(chunks(timeseries_to_query, 10)):
                     worker = Backfiller(queue, stop_event, ice_cream_api, batch, config, states)

@@ -27,7 +27,7 @@ class ExtractorConfig:
 @dataclass
 class BackFillConfig:
     enabled: bool
-    history_min: int
+    history_days: int
 
 
 @dataclass

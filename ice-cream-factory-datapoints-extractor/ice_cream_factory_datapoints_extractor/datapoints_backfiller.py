@@ -44,7 +44,7 @@ class Backfiller:
         self.logger = logging.getLogger(__name__)
         self.timeseries_list = timeseries_list
         self.states = states
-        self.stop_at = arrow.utcnow().shift(minutes=-config.backfill.history_min)
+        self.stop_at = arrow.utcnow().shift(days=-config.backfill.history_days)
         self.now_ts = arrow.utcnow()
         self.timeseries_seen_set: Set[str] = set()
 
@@ -73,10 +73,10 @@ class Backfiller:
 
     def process(self, timeseries, start, end):
         logging.info(f"Getting historical data {timeseries.external_id} from {start} to {end}")
-        single_query_lookback = - min(60, self.config.backfill.history_min)
+        single_query_lookback = - min(2, self.config.backfill.history_days)
         while end > start and not self.stop.is_set():
 
-            from_time = end.shift(minutes=single_query_lookback)  # can query API for only 10 min of data
+            from_time = end.shift(days=single_query_lookback)  # can query API for only 10 min of data
 
             logging.info(f"\t{timeseries.external_id} from {from_time.isoformat()} to {end.isoformat()}")
 

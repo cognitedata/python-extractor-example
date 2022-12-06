@@ -54,20 +54,16 @@ class Streamer:
         """
         logging.info(f"Getting live data for {timeseries.external_id}")
         to_time = arrow.utcnow()
-        # lookup back for 1 minutes. Allows late data.
+        # lookup back for X minutes. Allows late data.
         from_time = to_time.shift(minutes=-self.config.frontfill.lookback_min)
-        single_query_lookback = min(60, self.config.frontfill.lookback_min)
+        single_query_lookback = min(3600, self.config.frontfill.lookback_min)
 
-        time_ranges = [(from_time, from_time.shift(minutes=single_query_lookback))]
-        from_time = time_ranges[-1][1]
         while from_time < to_time:
-            time_ranges.append([(from_time, from_time.shift(minutes=single_query_lookback))])
-            from_time = time_ranges[-1][1]
-
-        for from_time, to_time in time_ranges:
-
+            req_time = min(to_time, from_time.shift(minutes=single_query_lookback))
             datapoints_dict = self.api.get_oee_timeseries_datapoints(
-                timeseries_ext_id=timeseries.external_id, start=from_time.timestamp(), end=to_time.timestamp()
+                timeseries_ext_id=timeseries.external_id,
+                start=from_time.float_timestamp,
+                end=req_time.float_timestamp
             )
 
             for timeseries_ext_id in datapoints_dict:
@@ -75,6 +71,8 @@ class Streamer:
                 self.upload_queue.add_to_upload_queue(
                     external_id=timeseries_ext_id, datapoints=datapoints_dict[timeseries_ext_id]
                 )
+
+            from_time = req_time
 
     def run(self) -> None:
         """

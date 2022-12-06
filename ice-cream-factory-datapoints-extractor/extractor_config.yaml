@@ -40,8 +40,8 @@ extractor:
       table: timeseries_datapoints_states
 
 backfill:
-  enabled: False
-  history-min: 1440
+  enabled: True
+  history-days: 30
 
 frontfill:
   enabled: True
