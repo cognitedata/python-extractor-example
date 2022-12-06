@@ -44,7 +44,7 @@ backfill:
   history-days: 30
 
 frontfill:
-  enabled: True
+  enabled: False
   continuous: False
   lookback-min: 60
 

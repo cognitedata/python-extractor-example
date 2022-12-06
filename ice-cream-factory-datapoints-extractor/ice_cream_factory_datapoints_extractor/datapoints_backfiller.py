@@ -58,7 +58,7 @@ class Backfiller:
         """
         low, high = self.states.get_state(timeseries.external_id)
         if not low:
-            low = self.stop_at.float_timestamp
+            low = self.now_ts.float_timestamp
         if not high:
             high = self.now_ts.float_timestamp
 
