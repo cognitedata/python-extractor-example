@@ -43,9 +43,8 @@ def timeseries_updates(
     try:
         oee_timeseries_dataset_id = client.data_sets.retrieve(external_id=config.oee_timeseries_dataset_ext_id).id
     except AttributeError:
-        logging.info("Could not find existing dataset, creating new")
-        ds = client.data_sets.create(DataSet(name="oee_timeseries", external_id=config.oee_timeseries_dataset_ext_id))
-        oee_timeseries_dataset_id = ds.id
+        logging.info("Could not find existing dataset. Have you run bootstrap cli?")
+        raise
 
     updated_timeseries_list: List[TimeSeries] = []
     for timeseries in timeseries_list:

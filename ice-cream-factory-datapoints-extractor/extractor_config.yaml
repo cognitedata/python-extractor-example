@@ -17,7 +17,7 @@ cognite:
     external-id: "rest-api:oee:datapoints"
 
 api:
-  url: https://ice-cream-factory.inso-internal.cognite.ai
+  url: https://ice-cream-factory-staging.inso-internal.cognite.ai
   sites:
     - Oslo
     - Hannover
