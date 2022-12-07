@@ -67,7 +67,6 @@ def run_extractor(
         config: Configuration parameters
         stop_event: Cancellation token, will be set when an interrupt signal is sent to the extractor process
     """
-    logging.basicConfig(level=logging.INFO)
     logging.info("Starting Ice Cream Factory datapoints extractor")
     ice_cream_api = IceCreamFactoryAPI(base_url=config.api.url)
 

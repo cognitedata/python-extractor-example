@@ -14,10 +14,10 @@ cognite:
     scopes:
       - ${COGNITE_BASE_URL}/.default
   extraction_pipeline:
-    external-id: "rest-api:oee:datapoints"
+    external-id: "ice-cream-api:oee:datapoints"
 
 api:
-  url: https://ice-cream-factory-staging.inso-internal.cognite.ai
+  url: https://ice-cream-factory.inso-internal.cognite.ai
   sites:
     - Oslo
     - Hannover
