@@ -14,7 +14,7 @@ cognite:
     scopes:
       - ${COGNITE_BASE_URL}/.default
   extraction_pipeline:
-    external-id: "ice-cream-api:oee:datapoints"
+    external-id: "ice-cream-api:opcua:datapoints"
 
 api:
   url: https://ice-cream-factory.inso-internal.cognite.ai
@@ -36,7 +36,7 @@ extractor:
   parallelism: 4
   state_store:
     raw:
-      database: src:002:opcua:db:state
+      database: src:002:opcua:ds:state
       table: timeseries_datapoints_states
 
 backfill:

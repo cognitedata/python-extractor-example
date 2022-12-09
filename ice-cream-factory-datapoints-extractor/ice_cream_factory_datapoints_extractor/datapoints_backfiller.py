@@ -67,9 +67,9 @@ class Backfiller:
         earliest_end = min(high, self.now_ts.float_timestamp)
         latest_end = max(high, self.now_ts.float_timestamp)
 
-        self.process(timeseries, arrow.get(earliest_start), arrow.get(latest_start))
-        self.process(timeseries, arrow.get(earliest_end), arrow.get(latest_end))
-        logging.info(f"{timeseries.external_id} reached configured limit at {arrow.get(latest_end)}")
+        self.process(timeseries, arrow.get(earliest_start, tzinfo="UTC"), arrow.get(latest_start, tzinfo="UTC"))
+        self.process(timeseries, arrow.get(earliest_end, tzinfo="UTC"), arrow.get(latest_end, tzinfo="UTC"))
+        logging.info(f"{timeseries.external_id} reached configured limit at {arrow.get(latest_end, tzinfo='UTC')}")
 
     def process(self, timeseries, start, end):
         logging.info(f"Getting historical data {timeseries.external_id} from {start} to {end}")

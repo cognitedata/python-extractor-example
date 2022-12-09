@@ -6,7 +6,6 @@ from threading import Event
 from typing import List
 
 from cognite.client import CogniteClient
-from cognite.client.data_classes import DataSet
 from cognite.client.data_classes import TimeSeries
 from cognite.extractorutils import Extractor
 from cognite.extractorutils.statestore import AbstractStateStore
