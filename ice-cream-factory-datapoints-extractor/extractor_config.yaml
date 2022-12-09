@@ -36,7 +36,7 @@ extractor:
   parallelism: 4
   state_store:
     raw:
-      database: src:002:opcua:ds:state
+      database: src:002:opcua:db:state
       table: timeseries_datapoints_states
 
 backfill:
