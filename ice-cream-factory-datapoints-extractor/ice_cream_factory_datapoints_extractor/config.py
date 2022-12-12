@@ -15,7 +15,7 @@ class ExtractorConfig:
     state_store: StateStoreConfig = StateStoreConfig(
         local=None,
         raw=RawStateStoreConfig(
-            database="src:005:oee:db:state", table="timeseries_datapoints_states", upload_interval=5
+            database="src:002:opcua:db:state", table="timeseries_datapoints_states", upload_interval=5
         ),
     )
 
@@ -25,13 +25,23 @@ class ExtractorConfig:
 
 
 @dataclass
-class BackfillConfig:
-    backfill_min: int
+class BackFillConfig:
+    enabled: bool
+    history_days: int
+
+
+@dataclass
+class FrontFillConfig:
+    enabled: bool
+    continuous: bool
+    lookback_min: float
 
 
 @dataclass
 class IceCreamFactoryConfig(BaseConfig):
     api: ApiConfig
-    backfill: BackfillConfig
+    backfill: BackFillConfig
+    frontfill: FrontFillConfig
     oee_timeseries_dataset_ext_id: str  # ext id of dataset for oee timeseries. Used to populate timeseries in the correct dataset
-    extractor: ExtractorConfig = ExtractorConfig()
+    extractor: ExtractorConfig
+

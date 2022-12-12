@@ -1,32 +1,53 @@
 logger:
-    console:
-        level: INFO
+  console:
+    level: INFO
 
 cognite:
-    # Read these from environment variables
-    host: ${COGNITE_BASE_URL}
-    project: ${COGNITE_PROJECT}
+  # Read these from environment variables
+  host: ${COGNITE_BASE_URL}
+  project: ${COGNITE_PROJECT}
 
-    idp-authentication:
-        token-url: ${COGNITE_TOKEN_URL}
-        client-id: ${COGNITE_CLIENT_ID}
-        secret: ${COGNITE_CLIENT_SECRET}
-        scopes:
-            - ${COGNITE_BASE_URL}/.default
+  idp-authentication:
+    token-url: ${COGNITE_TOKEN_URL}
+    client-id: ${COGNITE_CLIENT_ID}
+    secret: ${COGNITE_CLIENT_SECRET}
+    scopes:
+      - ${COGNITE_BASE_URL}/.default
+  extraction_pipeline:
+    external-id: "ice-cream-api:opcua:datapoints"
 
 api:
-    url: https://ice-cream-factory.inso-internal.cognite.ai
-    sites:
+  url: https://ice-cream-factory.inso-internal.cognite.ai
+  sites:
     - Oslo
     - Hannover
+    - Nuremberg
+    - Marseille
+    - Houston
+    - Sao Paulo
+    - Kuala Lumpur
+    - Chicago
+    - Rotterdam
+    - London
 
 extractor:
-    create-assets: false
-    upload_interval: 5
-    parallelism: 2
+  create-assets: false
+  upload_interval: 5
+  parallelism: 4
+  state_store:
+    raw:
+      database: src:002:opcua:db:state
+      table: timeseries_datapoints_states
 
 backfill:
-    backfill-min: 30
+  enabled: True
+  history-days: 30
 
-oee_timeseries_dataset_ext_id: uc:001:oee:ds
+frontfill:
+  enabled: False
+  continuous: False
+  lookback-min: 60
+
+
+oee_timeseries_dataset_ext_id: src:002:opcua:ds
 

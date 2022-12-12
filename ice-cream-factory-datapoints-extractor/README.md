@@ -10,7 +10,7 @@ First, you will need `poetry` installed. You should then be able to run
 
 ```
 poetry install
-poetry run rest_extractor
+poetry run ice_cream_extractor
 ```
 
 from the command line.

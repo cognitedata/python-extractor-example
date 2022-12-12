@@ -1,5 +1,6 @@
 from typing import Dict, List, Union
 
+import ujson as ujson
 from cognite.client.data_classes import TimeSeries
 from requests import Response, Session, adapters  # type: ignore
 
@@ -11,10 +12,10 @@ class IceCreamFactoryAPI:
         self.base_url = base_url
         self.adapter = adapters.HTTPAdapter(max_retries=3)
         self.session = Session()
-        self.session.mount("http://", self.adapter)
+        self.session.mount("https://", self.adapter)
 
     def get_response(
-        self, headers: Dict[str, str], url_suffix: str, params: Dict[str, Union[str, int, float]] = {}
+            self, headers: Dict[str, str], url_suffix: str, params: Dict[str, Union[str, int, float]] = {}
     ) -> Response:
         """
         Get response from API.
@@ -24,10 +25,10 @@ class IceCreamFactoryAPI:
             url_suffix: string to add to base url
             params: query parameters
         """
-        with self.session as s:
-            response = s.get(f"{self.base_url}/{url_suffix}", headers=headers, timeout=40, params=params)
-            response.raise_for_status()
-            return response
+
+        response = self.session.get(f"{self.base_url}/{url_suffix}", headers=headers, timeout=40, params=params)
+        response.raise_for_status()
+        return response
 
     def get_csv(self, url_suffix: str) -> str:
         """
@@ -51,7 +52,7 @@ class IceCreamFactoryAPI:
         response = self.get_response(headers={}, url_suffix=f"timeseries/{source}")
         timeseries_list = []
         timeseries_ext_ids = set()
-        for timeseries in response.json():
+        for timeseries in ujson.loads(response.content):
             if timeseries["metadata"]["site"] in sites and timeseries["external_id"] not in timeseries_ext_ids:
                 timeseries_list.append(
                     TimeSeries(
@@ -68,7 +69,7 @@ class IceCreamFactoryAPI:
         return timeseries_list
 
     def get_oee_timeseries_datapoints(
-        self, timeseries_ext_id: str, start: Union[str, int, float], end: Union[str, int, float]
+            self, timeseries_ext_id: str, start: Union[str, int, float], end: Union[str, int, float]
     ):
         """
         Get datapoints for a timeseries external id. This will also return datapoints for an associated timeseries
@@ -85,7 +86,7 @@ class IceCreamFactoryAPI:
         params = {"start": start, "end": end, "external_id": timeseries_ext_id}
         response = self.get_response(headers={}, url_suffix="datapoints/oee", params=params)
 
-        datapoints_dict = response.json()
+        datapoints_dict = ujson.loads(response.content)
         datapoints_to_upload = {}
 
         for timeseries in datapoints_dict:
