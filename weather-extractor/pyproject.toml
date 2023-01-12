@@ -3,10 +3,14 @@ name = "weather-extractor"
 version = "1.0.0"
 description = "A simple weather data extractor"
 authors = ["Mathias Lohne <mathias.lohne@cognite.com>"]
+packages = [
+    { include="met_extractor" },
+]
 
 [tool.poetry.dependencies]
-python = "^3.7"
-cognite-extractor-utils = "^1.4.2"
+python = "^3.8"
+cognite-extractor-utils = "^2.3.0-beta1"
+cognite-sdk-experimental = "^0.80.0"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.9.3"

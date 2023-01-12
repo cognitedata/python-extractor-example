@@ -1,13 +1,15 @@
 import logging
 from threading import Event, Thread
 from typing import Dict, List, Optional
+from time import sleep
 
 from cognite.client import CogniteClient
 from cognite.client.data_classes import Asset, TimeSeries
 from cognite.extractorutils import Extractor
+from cognite.extractorutils.base import ReloadConfigAction
 from cognite.extractorutils.statestore import AbstractStateStore
 from cognite.extractorutils.uploader import TimeSeriesUploadQueue
-from cognite.extractorutils.util import ensure_time_series
+from cognite.extractorutils.util import ensure_time_series, ensure_assets
 
 from . import __version__
 from .config import LocationConfig, WeatherConfig
@@ -67,8 +69,7 @@ def list_time_series(
             if config.extractor.create_assets:
                 args["asset_id"] = assets[weather_station]
 
-            if config.cognite.data_set_id:
-                args["data_set_id"] = config.cognite.data_set_id
+            args["data_set_id"] = config.cognite.get_extraction_pipeline(config.cognite.get_cognite_client("")).data_set_id
 
             time_series.append(TimeSeries(**args))
 
@@ -102,13 +103,22 @@ def create_assets(
                     "latitude": str(weather_station.latitude),
                     "station_id": weather_station.id,
                 },
+                data_set_id=config.cognite.get_extraction_pipeline(cdf).data_set_id
             )
         )
 
-    # Todo: handle if (some) assets exists
-    created_assets = cdf.assets.create(assets)
+    logger = logging.getLogger(__name__)
+    logger.info("Ensuring assets")
+    created_assets = ensure_assets(cdf, assets)
+
+    logger.info("Waiting for eventual consistency")
+    created_assets = []
+    while len(created_assets) != len(assets):
+        created_assets = cdf.assets.list(external_id_prefix=config.cognite.external_id_prefix, limit=None)
+        sleep(1)
     station_to_asset_id = {}
 
+    logger.info("Creating asset map")
     for asset in created_assets:
         weather_station = [s for s in weather_stations if s.id == asset.metadata["station_id"]][0]
         station_to_asset_id[weather_station] = asset.id
@@ -166,8 +176,10 @@ def main() -> None:
         config_class=WeatherConfig,
         version=__version__,
         run_handle=run_extractor,
+        reload_config_action=ReloadConfigAction.SHUTDOWN,
     ) as extractor:
         extractor.run()
+
 
 
 if __name__ == "__main__":
