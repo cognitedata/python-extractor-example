@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List
 
 from cognite.extractorutils.configtools import BaseConfig, RawStateStoreConfig, StateStoreConfig
@@ -12,11 +12,12 @@ class ApiConfig:
 
 @dataclass
 class ExtractorConfig:
-    state_store: StateStoreConfig = StateStoreConfig(
-        local=None,
-        raw=RawStateStoreConfig(
-            database="src:002:opcua:db:state", table="timeseries_datapoints_states", upload_interval=5
-        ),
+    state_store: StateStoreConfig = field(default_factory=StateStoreConfig(
+            local=None,
+            raw=RawStateStoreConfig(
+                database="src:002:opcua:db:state", table="timeseries_datapoints_states", upload_interval=5
+            ),
+        )
     )
 
     create_assets: bool = False
